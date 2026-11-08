@@ -1,0 +1,27 @@
+name: Assemble runtime download
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/assemble-runtime.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Download, verify and publish runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p parts
+          for n in 01 02 03 04; do
+            gh release download runtime-v1 --pattern "runtime.zip.part$n" --dir parts
+          done
+          cat parts/runtime.zip.part01 parts/runtime.zip.part02 parts/runtime.zip.part03 parts/runtime.zip.part04 > runtime.zip
+          echo '644b44e4ef2c21a07e5da9b3adb0e39c9d5b7556b507e41c0451c8e07d5c28aa  runtime.zip' | sha256sum -c -
+          gh release upload runtime-v1 runtime.zip --clobber
